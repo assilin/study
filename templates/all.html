@@ -1,0 +1,58 @@
+{% extends "layout.html" %}
+
+{% block main %}
+
+
+    <div class="section">
+        <form action="/all" method="post">
+            <div class="input-group input-group-lg">
+                <input type="text" autocomplete="off" autofocus class="form-control" name="infoWord" id="infoWord" placeholder="Input word">
+                <button class="btn btn-outline-primary" type="submit" name="action" value="check">Check!</button>
+            </div>
+        </form>
+    </div>
+
+
+
+    <div class="section">
+        <h4>{{ message }}</h4>
+        {% if word != "" %}
+            {% if all_lenght != 0 %}
+                <h4>{{ word }} - {{ all_lenght }} possible words:</h4>
+            {% else %}
+                <h4>{{ word }}</h4>
+            {% endif %}
+        {% endif %}
+        <div class="container_table" style="width: 95%">
+            <table>
+                <!-- Loop for possible words -->
+                <tbody>
+                    {% for item in table %}
+                    <tr>
+                        <td style="width: 30px">{{ loop.index }}.</td>
+                        <td style="width: 300px">{{ item }}</td>
+                        {% if table[item] == "added_by_user" %}
+                            <td style="width: 300px">added by user</td>
+                            <td>
+                                <form action="/all" method="post">
+                                    <button class="btn btn-outline-secondary btn-sm" type="submit" name="action" value="{{ item }}" id="{{ loop.index }}">
+                                        delete
+                                    </button>
+                                </form>
+                            </td>
+                        {% else %}
+                            <td style="width: 300px"></td>
+                            <td></td>
+                        {% endif %}
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+
+
+
+
+{% endblock %}
