@@ -1,0 +1,244 @@
+{% extends "layout.html" %}
+
+{% block main %}
+
+
+    {% if word_to_play != NULL %}
+        <div class="section">
+            <p hidden id="number">{{ len_word_to_play }}</p>
+            <p hidden id="word">{{ word_to_play }}</p>
+            <div class="container_in">
+                {% for letter in word_to_play %}
+                    <img class="word_image" id="{{ letter }}" src="/static/letters/{{ letter }}.png">
+                {% endfor %}
+            </div>
+        </div>
+        <div class="section">
+            <div class="container_in">
+                {% for i in range(len_word_to_play|int) %}
+                    <img class="guess_image" id="{{ i }}" src="">
+                {% endfor %}
+            </div>
+        </div>
+        <div class="section">
+            <form action="/game" method="post">
+                <div class="input-group input-group-lg">
+                    <input type="text" autocomplete="off" autofocus class="form-control" name="guessWord" id="guessWord" placeholder="Type your guess...">
+                    <button class="btn btn-outline-primary" type="submit" id="button-addon2">Check!</button>
+                </div>
+            </form>
+        </div>
+        <div class="section">
+            {% if message == "Wrong!" %}
+            <h4 class="message">🤔 I don't know this word</h4>
+            <form action="/game" method="post">
+                <div class="input-group">
+                    <input class="form-control" type="text" value="{{ new_word }} - no such word, add?" disabled readonly>
+                    <button class="btn btn-outline-primary" type="submit" name="add_word" value="add">Add word!</button>
+                    <button class="btn btn-outline-danger" type="submit" name="add_word" value="no">No!</button>
+                </div>
+            </form>
+            {% else %}
+                {% if answer_lenght == 0 and all_lenght != 0 %}
+                    <h3 style="color: red">
+                        Well done! You've guessed all my words!
+                    </h3>
+                {% else %}
+                    <h4>
+                        {{ message }}
+                    </h4>
+                {% endif %}
+            {% endif %}
+        </div>
+
+        <div class="section">
+            <div class="container_table">
+                <h4>
+                    You words: {{ table_lenght }}
+                </h4>
+                {% if all_lenght != 0 %}
+                    {% set width = (table_lenght / all_lenght * 100)|round|string + "%" %}
+                {% endif %}
+                <div class="progress">
+                    <div class="progress-bar progress-bar-striped progress-bar-animated" style="width: {{ width }}"></div>
+                </div>
+                <div class="div_overflow">
+                    <table>
+                        <!-- Loop for users words -->
+                        <tbody>
+                            {% for item in table %}
+                            <tr>
+                                <td style="width: 30px">{{ loop.index }}.</td>
+                                <td style="width: 200px">{{ item }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="container_table">
+                <h4>
+                    My words: {{ all_lenght }}
+                </h4>
+                <button class="btn btn-light btn-sm" type="button" id="showHint">Show hint</button>
+                <button class="btn btn-light btn-sm" type="button" id="showWords" style="margin-left: 10px">Show all</button>
+                <br>
+                <h4 class="hint" id="hint" style="margin-top: 15px">{{ answer|random }}</h4>
+                <div class="div_overflow">
+                    <table class="hint" id="allWords">
+                        <!-- Loop for possible words -->
+                        <tbody>
+                            {% for item in answer %}
+                            <tr>
+                                <td style="width: 30px">{{ loop.index }}.</td>
+                                <td style="width: 200px">{{ item }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+    {% endif %}
+
+    <script>
+        // valuables for word and lenght
+        let number_letters = document.getElementById("number").innerHTML;
+        let word = document.getElementById("word").innerHTML;
+        // change size of images depending of number
+        const root = document.querySelector(":root");
+        // change size of images depending of number
+        root.style.setProperty('--imageSize', number_letters);
+
+
+        // loop for creating regular expression
+        let pattern = "^";
+        for (let letter of word.split('').sort().join('')) {
+            pattern = pattern + "[" + letter + "]?";
+        }
+        pattern += "$";
+        let reg_word = new RegExp(pattern);
+
+        // save actual user's input
+        let input_save = "";
+        // check input function
+        function check_input() {
+            // actual input
+            let text_input = document.getElementById("guessWord").value;
+            let is_match = reg_word.test(text_input.split('').sort().join(''));
+            if (!is_match) {
+                document.getElementById("guessWord").value = input_save;
+            } else {
+                input_save = text_input;
+            }
+        }
+
+        // show and hide images function
+        function show_n_hide() {
+            let guessword = document.getElementById("guessWord").value;
+            for (let i = 0; i < number_letters; i++) {
+                let image = document.getElementById(i);
+                // if for guessword images
+                if (i < guessword.length) {
+                    // change and show images with letters
+                    let letter = guessword[i];
+                    image.src = `/static/letters/${letter}.png`;
+                    image.style.display = "inline";
+                } else {
+                    // change and hide images with letters
+                    image.src = "";
+                    image.style.display = "none";
+                }
+            }
+        };
+
+        // change propities while typing
+        function propeties() {
+            let guessword = document.getElementById("guessWord").value;
+            // alert(guessword);
+            let curr_style = "";
+            let letters = document.querySelectorAll(".word_image");
+
+            // reset propeties
+            letters.forEach((item) => {
+                    item.style.filter = "grayscale(0%) opacity(100%) drop-shadow(3px 3px 5px #A9A9A9)";
+                });
+
+            // make "unactive" letters
+            for (let i = 0; i < guessword.length; i++) {
+                should_skip = false;
+                curr_id = guessword[i];
+                letters.forEach((item) => {
+                    curr_style = item.style.filter;
+                    if ((curr_id == item.id) && (curr_style != "grayscale(100%) opacity(50%)") && (should_skip == false)) {
+                        item.style.filter = "grayscale(100%) opacity(50%)";
+                        should_skip = true;
+                    }
+                });
+            }
+        };
+
+
+        // listener for input: images (add)
+        let image_input = document.querySelectorAll(".word_image");
+        image_input.forEach((item) => {
+            item.addEventListener("click", function(event) {
+                // check for active, make unactive, correct input
+                if (item.style.filter != "grayscale(100%) opacity(50%)") {
+                    document.getElementById("guessWord").value += item.id;
+                    item.style.filter = "grayscale(100%) opacity(50%)";
+                }
+            });
+            item.addEventListener("click", check_input);
+            item.addEventListener("click", show_n_hide);
+        });
+        // listener for input: images (del)
+        let image_delete = document.querySelectorAll(".guess_image");
+        image_delete.forEach((item) => {
+            item.addEventListener("click", function(event) {
+            // get input
+            let temp = document.getElementById("guessWord").value;
+
+            // change propities back
+            let letters = document.querySelectorAll(".word_image");
+            let should_skip = false;
+            // using .forEach because of repeating letters
+            letters.forEach((item_w) => {
+                curr_id = item_w.id;
+                curr_style = item_w.style.filter;
+                if ((curr_id == temp[item.id]) && (curr_style == "grayscale(100%) opacity(50%)") && (should_skip == false)) {
+                    item_w.style.filter = "grayscale(0%) opacity(100%) drop-shadow(2px 2px 2px #A9A9A9)";
+                    should_skip = true;
+                }
+            });
+
+            // correct input
+            document.getElementById("guessWord").value = temp.slice(0, item.id) + temp.slice(Number(item.id) + 1);
+            });
+            item.addEventListener("click", check_input);
+            item.addEventListener("click", show_n_hide);
+        });
+        // listener for input: input
+        let input = document.querySelector("input");
+        input.addEventListener("keyup", check_input);
+        input.addEventListener("keyup", show_n_hide);
+        input.addEventListener("keyup", propeties);
+
+        // show answers
+        let show_words = document.getElementById("showWords");
+        show_words.addEventListener("click", function(event) {
+            document.getElementById("allWords").style.display = "inline-block";
+            document.getElementById("hint").style.display = "none";
+        });
+        let show_hint = document.getElementById("showHint");
+        show_hint.addEventListener("click", function(event) {
+            document.getElementById("hint").style.display = "inline-block";
+            document.getElementById("allWords").style.display = "none";
+        });
+
+    </script>
+
+
+{% endblock %}
